@@ -1,0 +1,6 @@
+{
+  "name": "Finanzy - Gestão Financeira Pessoal",
+  "description": "Dashboard moderno de gestão financeira pessoal estilo fintech com cards de receitas, despesas, investimentos, saldo, gráfico de distribuição e controle de lançamentos.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
