@@ -10,6 +10,8 @@ export const INITIAL_TRANSACTIONS: Transaction[] = [
     category: 'Salário',
     date: '2026-09-05',
     notes: 'Pagamento CLT + benefícios',
+    paymentMethod: 'Transferência',
+    status: 'paid',
   },
   {
     id: 'tx-2',
@@ -19,15 +21,19 @@ export const INITIAL_TRANSACTIONS: Transaction[] = [
     category: 'Freelance & Projetos',
     date: '2026-09-18',
     notes: 'Projeto landing page cliente Tech',
+    paymentMethod: 'Pix',
+    status: 'paid',
   },
   {
     id: 'tx-3',
-    title: 'Dividendos FIIs',
+    title: 'Dividendos FIIs & Ações',
     amount: 250.00,
     type: 'revenue',
     category: 'Dividendos',
     date: '2026-09-15',
     notes: 'Rendimentos mensais de fundos imobiliários',
+    paymentMethod: 'Transferência',
+    status: 'paid',
   },
 
   // Investimentos
@@ -39,6 +45,8 @@ export const INITIAL_TRANSACTIONS: Transaction[] = [
     category: 'Renda Fixa',
     date: '2026-09-06',
     notes: 'Reserva e rentabilidade com liquidez diária',
+    paymentMethod: 'Pix',
+    status: 'paid',
   },
   {
     id: 'tx-5',
@@ -48,9 +56,11 @@ export const INITIAL_TRANSACTIONS: Transaction[] = [
     category: 'Ações & FIIs',
     date: '2026-09-10',
     notes: 'Carteira de renda passiva de longo prazo',
+    paymentMethod: 'Pix',
+    status: 'paid',
   },
 
-  // Despesas Fixas (como mencionado no exemplo: Aluguel ~68%, Internet ~7%, etc.)
+  // Despesas Fixas
   {
     id: 'tx-6',
     title: 'Aluguel do Apartamento',
@@ -58,7 +68,9 @@ export const INITIAL_TRANSACTIONS: Transaction[] = [
     type: 'fixed_expense',
     category: 'Aluguel',
     date: '2026-09-05',
-    notes: 'Aluguel + condomínio incluso',
+    notes: 'Aluguel + taxa de condomínio',
+    paymentMethod: 'Boleto',
+    status: 'paid',
   },
   {
     id: 'tx-7',
@@ -68,6 +80,8 @@ export const INITIAL_TRANSACTIONS: Transaction[] = [
     category: 'Internet',
     date: '2026-09-10',
     notes: 'Plano fibra óptica residencial',
+    paymentMethod: 'Pix',
+    status: 'paid',
   },
   {
     id: 'tx-8',
@@ -76,16 +90,20 @@ export const INITIAL_TRANSACTIONS: Transaction[] = [
     type: 'fixed_expense',
     category: 'Energia & Água',
     date: '2026-09-12',
-    notes: 'Contas básicas da casa',
+    notes: 'Contas de consumo do imóvel',
+    paymentMethod: 'Pix',
+    status: 'paid',
   },
   {
     id: 'tx-9',
-    title: 'Assinaturas Digitais (Netflix, Spotify)',
-    amount: 89.90,
+    title: 'Assinaturas Digitais (Netflix, Spotify, ChatGPT)',
+    amount: 129.90,
     type: 'fixed_expense',
     category: 'Streaming & Assinaturas',
     date: '2026-09-08',
-    notes: 'Streaming de filmes e músicas',
+    notes: 'Serviços de produtividade e entretenimento',
+    paymentMethod: 'Cartão de Crédito',
+    status: 'paid',
   },
 
   // Despesas Variáveis
@@ -96,7 +114,9 @@ export const INITIAL_TRANSACTIONS: Transaction[] = [
     type: 'variable_expense',
     category: 'Supermercado',
     date: '2026-09-14',
-    notes: 'Compras de mantimentos para o mês',
+    notes: 'Compras de mantimentos para a casa',
+    paymentMethod: 'Cartão de Crédito',
+    status: 'paid',
   },
   {
     id: 'tx-11',
@@ -106,6 +126,8 @@ export const INITIAL_TRANSACTIONS: Transaction[] = [
     category: 'Lazer & Restaurantes',
     date: '2026-09-20',
     notes: 'Comemoração com amigos',
+    paymentMethod: 'Cartão de Débito',
+    status: 'paid',
   },
   {
     id: 'tx-12',
@@ -115,6 +137,8 @@ export const INITIAL_TRANSACTIONS: Transaction[] = [
     category: 'Transporte',
     date: '2026-09-22',
     notes: 'Deslocamentos urbanos',
+    paymentMethod: 'Pix',
+    status: 'paid',
   },
   {
     id: 'tx-13',
@@ -123,7 +147,9 @@ export const INITIAL_TRANSACTIONS: Transaction[] = [
     type: 'variable_expense',
     category: 'Saúde',
     date: '2026-09-25',
-    notes: 'Suplementos e medicamentos',
+    notes: 'Suplementação e cuidados',
+    paymentMethod: 'Pix',
+    status: 'paid',
   }
 ];
 

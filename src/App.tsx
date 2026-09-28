@@ -8,9 +8,13 @@ import { TransactionsList } from './components/TransactionsList';
 import { DistributionChart } from './components/DistributionChart';
 import { TransactionModal } from './components/TransactionModal';
 import { FilterDrawer, FilterState } from './components/FilterDrawer';
-import { Plus, Wallet, ArrowDownLeft, ArrowUpRight, PiggyBank } from 'lucide-react';
+import { AiAdvisorDrawer } from './components/AiAdvisorDrawer';
+import { BudgetsView } from './components/BudgetsView';
+import { SettingsModal } from './components/SettingsModal';
+import { MobileBottomNav, MobileTab } from './components/MobileBottomNav';
+import { Sparkles, Target, ArrowRight, ShieldCheck, PieChart, Layers } from 'lucide-react';
 
-const STORAGE_KEY = 'finanzy_transactions_v1';
+const STORAGE_KEY = 'finanzy_transactions_v2';
 const PRIVACY_KEY = 'finanzy_hide_values';
 
 export default function App() {
@@ -22,7 +26,7 @@ export default function App() {
         return JSON.parse(saved);
       }
     } catch {
-      // ignore
+      // fallback
     }
     return INITIAL_TRANSACTIONS;
   });
@@ -36,21 +40,32 @@ export default function App() {
     }
   });
 
-  // Active category filter tab: 'all', 'revenue', 'fixed_expense', 'variable_expense'
+  // Dynamic Month Selector (e.g. "2026-09")
+  const [selectedMonth, setSelectedMonth] = useState<string>('2026-09');
+
+  // Active category filter tab: 'all', 'revenue', 'fixed_expense', 'variable_expense', 'investment'
   const [activeCategoryFilter, setActiveCategoryFilter] = useState<CategoryFilter>('all');
 
-  // Filter drawer state
+  // Desktop active view tab: 'overview' | 'budgets'
+  const [desktopView, setDesktopView] = useState<'overview' | 'budgets'>('overview');
+
+  // Mobile bottom navigation state
+  const [mobileTab, setMobileTab] = useState<MobileTab>('dashboard');
+
+  // Drawers and Modals
   const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isAiOpen, setIsAiOpen] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
+
+  // Filter drawer state
   const [filters, setFilters] = useState<FilterState>({
     search: '',
     sortBy: 'recent',
     minAmount: '',
     maxAmount: '',
   });
-
-  // Transaction Modal state
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
 
   // Sync to localStorage
   useEffect(() => {
@@ -69,6 +84,27 @@ export default function App() {
     }
   }, [hideValues]);
 
+  // Month navigation handlers
+  const handlePrevMonth = () => {
+    const [y, m] = selectedMonth.split('-').map(Number);
+    const d = new Date(y, m - 2, 1);
+    setSelectedMonth(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`);
+  };
+
+  const handleNextMonth = () => {
+    const [y, m] = selectedMonth.split('-').map(Number);
+    const d = new Date(y, m, 1);
+    setSelectedMonth(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`);
+  };
+
+  // Transactions belonging to selected month (or all if user chooses)
+  const monthTransactions = useMemo(() => {
+    return transactions.filter((tx) => tx.date.startsWith(selectedMonth));
+  }, [transactions, selectedMonth]);
+
+  // If month has no transactions, fall back to showing all transactions so user sees demo data
+  const activeScopeTransactions = monthTransactions.length > 0 ? monthTransactions : transactions;
+
   // Calculate Summary metrics
   const summary: SummaryData = useMemo(() => {
     let revenue = 0;
@@ -76,7 +112,7 @@ export default function App() {
     let fixedExpenses = 0;
     let variableExpenses = 0;
 
-    transactions.forEach((tx) => {
+    activeScopeTransactions.forEach((tx) => {
       switch (tx.type) {
         case 'revenue':
           revenue += tx.amount;
@@ -102,44 +138,48 @@ export default function App() {
       expenses,
       balance,
     };
-  }, [transactions]);
+  }, [activeScopeTransactions]);
 
   // Counts for the CategoryTabs
   const tabCounts = useMemo(() => {
     let revenue = 0;
     let fixed_expense = 0;
     let variable_expense = 0;
+    let investment = 0;
 
-    transactions.forEach((tx) => {
+    activeScopeTransactions.forEach((tx) => {
       if (tx.type === 'revenue') revenue++;
       if (tx.type === 'fixed_expense') fixed_expense++;
       if (tx.type === 'variable_expense') variable_expense++;
+      if (tx.type === 'investment') investment++;
     });
 
     return {
-      all: transactions.length,
+      all: activeScopeTransactions.length,
       revenue,
       fixed_expense,
       variable_expense,
+      investment,
     };
-  }, [transactions]);
+  }, [activeScopeTransactions]);
 
-  // Filtered and sorted transactions for the list
+  // Filtered and sorted transactions
   const filteredTransactions = useMemo(() => {
-    return transactions
+    return activeScopeTransactions
       .filter((tx) => {
         // Tab category filter
         if (activeCategoryFilter !== 'all' && tx.type !== activeCategoryFilter) {
           return false;
         }
 
-        // Search filter (title or notes or category)
+        // Search filter (title, category, notes, paymentMethod)
         if (filters.search.trim()) {
           const query = filters.search.toLowerCase();
           const matchesTitle = tx.title.toLowerCase().includes(query);
           const matchesCategory = tx.category.toLowerCase().includes(query);
           const matchesNotes = tx.notes ? tx.notes.toLowerCase().includes(query) : false;
-          if (!matchesTitle && !matchesCategory && !matchesNotes) {
+          const matchesMethod = tx.paymentMethod ? tx.paymentMethod.toLowerCase().includes(query) : false;
+          if (!matchesTitle && !matchesCategory && !matchesNotes && !matchesMethod) {
             return false;
           }
         }
@@ -172,19 +212,17 @@ export default function App() {
             return 0;
         }
       });
-  }, [transactions, activeCategoryFilter, filters]);
+  }, [activeScopeTransactions, activeCategoryFilter, filters]);
 
   // Handlers
   const handleSaveTransaction = (
     txData: Omit<Transaction, 'id'> & { id?: string }
   ) => {
     if (txData.id) {
-      // Editing existing
       setTransactions((prev) =>
         prev.map((t) => (t.id === txData.id ? ({ ...txData, id: txData.id } as Transaction) : t))
       );
     } else {
-      // Creating new
       const newTransaction: Transaction = {
         ...txData,
         id: `tx-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
@@ -212,16 +250,20 @@ export default function App() {
   };
 
   const handleResetData = () => {
-    if (confirm('Deseja restaurar os lançamentos padrão de demonstração?')) {
-      setTransactions(INITIAL_TRANSACTIONS);
-      setActiveCategoryFilter('all');
-      setFilters({
-        search: '',
-        sortBy: 'recent',
-        minAmount: '',
-        maxAmount: '',
-      });
-    }
+    setTransactions(INITIAL_TRANSACTIONS);
+    setActiveCategoryFilter('all');
+    setSelectedMonth('2026-09');
+    setFilters({
+      search: '',
+      sortBy: 'recent',
+      minAmount: '',
+      maxAmount: '',
+    });
+  };
+
+  const handleClearData = () => {
+    setTransactions([]);
+    setActiveCategoryFilter('all');
   };
 
   const handleResetFilters = () => {
@@ -238,82 +280,194 @@ export default function App() {
   );
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] text-slate-800 flex flex-col font-sans pb-20 sm:pb-12">
+    <div className="min-h-screen bg-[#F8FAFC] text-slate-800 flex flex-col font-sans pb-24 sm:pb-12">
       {/* Top Header */}
       <Header
         hideValues={hideValues}
         onToggleHideValues={() => setHideValues((v) => !v)}
-        onResetData={handleResetData}
-        selectedMonth="Setembro 2026"
+        selectedMonth={selectedMonth}
+        onPrevMonth={handlePrevMonth}
+        onNextMonth={handleNextMonth}
+        onOpenSettings={() => setIsSettingsOpen(true)}
+        onOpenAiAdvisor={() => setIsAiOpen(true)}
       />
 
       {/* Main Workspace */}
-      <main className="max-w-7xl w-full mx-auto px-4 sm:px-8 py-6 sm:py-8 space-y-6 flex-1">
-        {/* Top Summary Cards (Receita, Investir, Despesas, Saldo) */}
+      <main className="max-w-7xl w-full mx-auto px-3 sm:px-8 py-4 sm:py-6 space-y-5 sm:space-y-6 flex-1">
+        {/* Top Summary Cards */}
         <SummaryCards summary={summary} hideValues={hideValues} />
 
-        {/* Category Navigation Bar */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2">
-          <CategoryTabs
-            activeFilter={activeCategoryFilter}
-            onSelectFilter={setActiveCategoryFilter}
-            counts={tabCounts}
-          />
-
-          {/* Quick Stats Pill */}
-          <div className="hidden lg:flex items-center gap-3 text-xs text-slate-500 font-medium bg-white px-3 py-1.5 rounded-xl border border-slate-200/60 shadow-xs">
-            <span className="flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-emerald-500" />
-              Taxa de Poupança:{' '}
-              <strong className="text-slate-900 font-mono">
-                {summary.revenue > 0
-                  ? `${Math.round(((summary.investment + Math.max(0, summary.balance)) / summary.revenue) * 100)}%`
-                  : '0%'}
-              </strong>
-            </span>
+        {/* Desktop View Navigation Bar (Visão Geral vs Metas de Gastos) */}
+        <div className="hidden sm:flex items-center justify-between gap-3 pt-1">
+          <div className="flex items-center gap-1.5 p-1 bg-slate-200/60 rounded-2xl">
+            <button
+              onClick={() => setDesktopView('overview')}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-extrabold transition-all ${
+                desktopView === 'overview'
+                  ? 'bg-white text-slate-900 shadow-2xs font-extrabold'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              <Layers className="w-3.5 h-3.5" />
+              <span>Visão Geral & Lançamentos</span>
+            </button>
+            <button
+              onClick={() => setDesktopView('budgets')}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-extrabold transition-all ${
+                desktopView === 'budgets'
+                  ? 'bg-white text-slate-900 shadow-2xs font-extrabold'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              <Target className="w-3.5 h-3.5 text-indigo-600" />
+              <span>Metas & Tetos de Gastos</span>
+            </button>
           </div>
+
+          {/* Quick AI Trigger Banner */}
+          <button
+            onClick={() => setIsAiOpen(true)}
+            className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-indigo-50 to-purple-50 hover:from-indigo-100 hover:to-purple-100 border border-indigo-200/80 text-indigo-900 text-xs font-bold transition-all shadow-2xs"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
+            <span>Consultoria Inteligente com IA</span>
+            <ArrowRight className="w-3 h-3 text-indigo-500" />
+          </button>
         </div>
 
-        {/* Main Grid: Lançamentos & Gráfico de Distribuição lado a lado */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-          {/* Coluna da Lista de Lançamentos (7 colunas no desktop) */}
-          <div className="lg:col-span-7 flex flex-col">
-            <TransactionsList
-              transactions={filteredTransactions}
-              onAddClick={handleOpenAdd}
-              onFilterClick={() => setIsFilterOpen(true)}
-              onEditClick={handleOpenEdit}
-              onDeleteClick={handleDeleteTransaction}
-              hideValues={hideValues}
-              searchQuery={filters.search}
-              onSearchChange={(q) => setFilters((f) => ({ ...f, search: q }))}
-              hasActiveFilters={hasActiveFilters}
-            />
-          </div>
+        {/* Mobile View Switching */}
+        {/* 1. Mobile Dashboard View */}
+        <div className="sm:hidden">
+          {mobileTab === 'dashboard' && (
+            <div className="space-y-4">
+              <CategoryTabs
+                activeFilter={activeCategoryFilter}
+                onSelectFilter={setActiveCategoryFilter}
+                counts={tabCounts}
+              />
+              <DistributionChart
+                transactions={activeScopeTransactions}
+                activeFilter={activeCategoryFilter}
+                hideValues={hideValues}
+              />
+              <TransactionsList
+                transactions={filteredTransactions.slice(0, 6)}
+                onAddClick={handleOpenAdd}
+                onFilterClick={() => setIsFilterOpen(true)}
+                onEditClick={handleOpenEdit}
+                onDeleteClick={handleDeleteTransaction}
+                hideValues={hideValues}
+                searchQuery={filters.search}
+                onSearchChange={(q) => setFilters((f) => ({ ...f, search: q }))}
+                hasActiveFilters={hasActiveFilters}
+              />
+              {filteredTransactions.length > 6 && (
+                <button
+                  onClick={() => setMobileTab('transactions')}
+                  className="w-full py-3 rounded-2xl bg-white border border-slate-200 text-slate-700 text-xs font-bold shadow-2xs flex items-center justify-center gap-1.5"
+                >
+                  <span>Ver todos os {filteredTransactions.length} lançamentos</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+          )}
 
-          {/* Coluna do Gráfico de Distribuição (Donut Chart) (5 colunas no desktop) */}
-          <div className="lg:col-span-5 flex flex-col">
-            <DistributionChart
-              transactions={transactions}
-              activeFilter={activeCategoryFilter}
+          {mobileTab === 'transactions' && (
+            <div className="space-y-4">
+              <CategoryTabs
+                activeFilter={activeCategoryFilter}
+                onSelectFilter={setActiveCategoryFilter}
+                counts={tabCounts}
+              />
+              <TransactionsList
+                transactions={filteredTransactions}
+                onAddClick={handleOpenAdd}
+                onFilterClick={() => setIsFilterOpen(true)}
+                onEditClick={handleOpenEdit}
+                onDeleteClick={handleDeleteTransaction}
+                hideValues={hideValues}
+                searchQuery={filters.search}
+                onSearchChange={(q) => setFilters((f) => ({ ...f, search: q }))}
+                hasActiveFilters={hasActiveFilters}
+              />
+            </div>
+          )}
+
+          {mobileTab === 'ai' && (
+            <div className="pt-1">
+              <AiAdvisorDrawer
+                isOpen={true}
+                onClose={() => setMobileTab('dashboard')}
+                transactions={activeScopeTransactions}
+                hideValues={hideValues}
+              />
+            </div>
+          )}
+
+          {mobileTab === 'budgets' && (
+            <BudgetsView
+              transactions={activeScopeTransactions}
               hideValues={hideValues}
             />
-          </div>
+          )}
+        </div>
+
+        {/* Desktop View Workspace */}
+        <div className="hidden sm:block">
+          {desktopView === 'overview' ? (
+            <div className="space-y-6">
+              {/* Category Navigation Bar */}
+              <CategoryTabs
+                activeFilter={activeCategoryFilter}
+                onSelectFilter={setActiveCategoryFilter}
+                counts={tabCounts}
+              />
+
+              {/* Main Grid: Lançamentos & Gráfico de Distribuição lado a lado */}
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                {/* Coluna da Lista de Lançamentos (7 colunas no desktop) */}
+                <div className="lg:col-span-7 flex flex-col">
+                  <TransactionsList
+                    transactions={filteredTransactions}
+                    onAddClick={handleOpenAdd}
+                    onFilterClick={() => setIsFilterOpen(true)}
+                    onEditClick={handleOpenEdit}
+                    onDeleteClick={handleDeleteTransaction}
+                    hideValues={hideValues}
+                    searchQuery={filters.search}
+                    onSearchChange={(q) => setFilters((f) => ({ ...f, search: q }))}
+                    hasActiveFilters={hasActiveFilters}
+                  />
+                </div>
+
+                {/* Coluna do Gráfico de Distribuição (5 colunas no desktop) */}
+                <div className="lg:col-span-5 flex flex-col">
+                  <DistributionChart
+                    transactions={activeScopeTransactions}
+                    activeFilter={activeCategoryFilter}
+                    hideValues={hideValues}
+                  />
+                </div>
+              </div>
+            </div>
+          ) : (
+            <BudgetsView
+              transactions={activeScopeTransactions}
+              hideValues={hideValues}
+            />
+          )}
         </div>
       </main>
 
-      {/* Mobile Floating Action Button (Thumb Zone for mobile phones) */}
-      <div className="sm:hidden fixed bottom-5 right-5 z-40">
-        <button
-          onClick={handleOpenAdd}
-          className="w-14 h-14 rounded-full bg-slate-900 text-white shadow-xl shadow-slate-900/30 flex items-center justify-center active:scale-95 transition-all"
-          aria-label="Adicionar lançamento"
-        >
-          <Plus className="w-6 h-6" />
-        </button>
-      </div>
+      {/* Mobile Bottom Navigation Bar */}
+      <MobileBottomNav
+        currentTab={mobileTab}
+        onSelectTab={setMobileTab}
+        onOpenAdd={handleOpenAdd}
+      />
 
-      {/* Add / Edit Transaction Modal */}
+      {/* Modals & Drawers */}
       <TransactionModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
@@ -327,17 +481,35 @@ export default function App() {
             ? 'fixed_expense'
             : activeCategoryFilter === 'variable_expense'
             ? 'variable_expense'
-            : 'fixed_expense'
+            : activeCategoryFilter === 'investment'
+            ? 'investment'
+            : 'variable_expense'
         }
       />
 
-      {/* Filter & Sorting Drawer */}
       <FilterDrawer
         isOpen={isFilterOpen}
         onClose={() => setIsFilterOpen(false)}
         filters={filters}
         onChange={setFilters}
         onReset={handleResetFilters}
+      />
+
+      {/* AI Advisor Modal (Desktop or trigger) */}
+      <AiAdvisorDrawer
+        isOpen={isAiOpen}
+        onClose={() => setIsAiOpen(false)}
+        transactions={activeScopeTransactions}
+        hideValues={hideValues}
+      />
+
+      {/* Settings & Export Modal */}
+      <SettingsModal
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+        transactions={transactions}
+        onResetData={handleResetData}
+        onClearData={handleClearData}
       />
     </div>
   );

@@ -26,6 +26,10 @@ export type InvestmentCategory =
 
 export type AllCategories = ExpenseCategory | RevenueCategory | InvestmentCategory;
 
+export type PaymentMethod = 'Pix' | 'Cartão de Crédito' | 'Cartão de Débito' | 'Dinheiro' | 'Boleto' | 'Transferência';
+
+export type PaymentStatus = 'paid' | 'pending';
+
 export interface Transaction {
   id: string;
   title: string;
@@ -34,13 +38,28 @@ export interface Transaction {
   category: AllCategories;
   date: string; // ISO format: YYYY-MM-DD
   notes?: string;
+  paymentMethod?: PaymentMethod;
+  status?: PaymentStatus;
 }
 
-export type CategoryFilter = 'all' | 'revenue' | 'fixed_expense' | 'variable_expense';
+export type CategoryFilter = 'all' | 'revenue' | 'fixed_expense' | 'variable_expense' | 'investment';
 
 export interface SummaryData {
   revenue: number;
   investment: number;
   expenses: number;
   balance: number;
+}
+
+export interface BudgetLimit {
+  category: ExpenseCategory;
+  limit: number;
+}
+
+export interface ChatMessage {
+  id: string;
+  sender: 'user' | 'assistant';
+  text: string;
+  timestamp: string;
+  suggestions?: string[];
 }
