@@ -1,11 +1,11 @@
 import React from 'react';
-import { LayoutDashboard, Receipt, Sparkles, Target, Plus } from 'lucide-react';
+import { Home, MessageSquare, Receipt, Plus } from 'lucide-react';
 
-export type MobileTab = 'dashboard' | 'transactions' | 'ai' | 'budgets';
+export type CleanNavTab = 'home' | 'chat' | 'reports';
 
 interface MobileBottomNavProps {
-  currentTab: MobileTab;
-  onSelectTab: (tab: MobileTab) => void;
+  currentTab: CleanNavTab;
+  onSelectTab: (tab: CleanNavTab) => void;
   onOpenAdd: () => void;
 }
 
@@ -15,69 +15,48 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
   onOpenAdd,
 }) => {
   return (
-    <nav className="sm:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-lg border-t border-slate-200/80 px-2 py-1.5 shadow-lg">
-      <div className="flex items-center justify-around relative">
-        {/* Tab 1: Dashboard */}
+    <nav className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-lg border-t border-slate-200/80 px-4 py-2 shadow-lg">
+      <div className="max-w-md mx-auto flex items-center justify-around relative">
+        {/* Tab 1: Início */}
         <button
-          onClick={() => onSelectTab('dashboard')}
-          className={`flex flex-col items-center justify-center py-1 px-3 rounded-2xl transition-all ${
-            currentTab === 'dashboard'
-              ? 'text-indigo-600 font-bold'
+          onClick={() => onSelectTab('home')}
+          className={`flex flex-col items-center justify-center py-1 px-4 rounded-2xl transition-all ${
+            currentTab === 'home'
+              ? 'text-indigo-600 font-extrabold'
               : 'text-slate-400 hover:text-slate-600 font-medium'
           }`}
         >
-          <LayoutDashboard className="w-5 h-5 mb-0.5" />
+          <Home className="w-5 h-5 mb-0.5" />
           <span className="text-[10px]">Início</span>
         </button>
 
-        {/* Tab 2: Lançamentos */}
+        {/* Tab 2: Chat IA */}
         <button
-          onClick={() => onSelectTab('transactions')}
-          className={`flex flex-col items-center justify-center py-1 px-3 rounded-2xl transition-all ${
-            currentTab === 'transactions'
-              ? 'text-indigo-600 font-bold'
+          onClick={() => onSelectTab('chat')}
+          className={`flex flex-col items-center justify-center py-1 px-4 rounded-2xl transition-all ${
+            currentTab === 'chat'
+              ? 'text-indigo-600 font-extrabold'
+              : 'text-slate-400 hover:text-slate-600 font-medium'
+          }`}
+        >
+          <div className="relative">
+            <MessageSquare className="w-5 h-5 mb-0.5" />
+            <span className="w-2 h-2 rounded-full bg-emerald-500 absolute -top-0.5 -right-0.5" />
+          </div>
+          <span className="text-[10px]">Chat IA</span>
+        </button>
+
+        {/* Tab 3: Extrato & Gráficos */}
+        <button
+          onClick={() => onSelectTab('reports')}
+          className={`flex flex-col items-center justify-center py-1 px-4 rounded-2xl transition-all ${
+            currentTab === 'reports'
+              ? 'text-indigo-600 font-extrabold'
               : 'text-slate-400 hover:text-slate-600 font-medium'
           }`}
         >
           <Receipt className="w-5 h-5 mb-0.5" />
           <span className="text-[10px]">Extrato</span>
-        </button>
-
-        {/* Center Prominent Add Button */}
-        <div className="relative -top-4">
-          <button
-            onClick={onOpenAdd}
-            className="w-13 h-13 rounded-full bg-slate-900 text-white shadow-lg shadow-slate-900/30 flex items-center justify-center active:scale-90 transition-all border-4 border-[#F8FAFC]"
-            aria-label="Adicionar lançamento"
-          >
-            <Plus className="w-6 h-6 stroke-[2.5]" />
-          </button>
-        </div>
-
-        {/* Tab 3: Consultor AI */}
-        <button
-          onClick={() => onSelectTab('ai')}
-          className={`flex flex-col items-center justify-center py-1 px-3 rounded-2xl transition-all ${
-            currentTab === 'ai'
-              ? 'text-indigo-600 font-bold'
-              : 'text-slate-400 hover:text-slate-600 font-medium'
-          }`}
-        >
-          <Sparkles className="w-5 h-5 mb-0.5" />
-          <span className="text-[10px]">IA</span>
-        </button>
-
-        {/* Tab 4: Metas */}
-        <button
-          onClick={() => onSelectTab('budgets')}
-          className={`flex flex-col items-center justify-center py-1 px-3 rounded-2xl transition-all ${
-            currentTab === 'budgets'
-              ? 'text-indigo-600 font-bold'
-              : 'text-slate-400 hover:text-slate-600 font-medium'
-          }`}
-        >
-          <Target className="w-5 h-5 mb-0.5" />
-          <span className="text-[10px]">Metas</span>
         </button>
       </div>
     </nav>
